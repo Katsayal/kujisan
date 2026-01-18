@@ -223,10 +223,10 @@ export default function MembersBrowser({ initialPeople }: Props) {
             {/* Section Header */}
             <div className="flex items-center gap-4 mb-8">
               <h2 className="text-xl md:text-3xl font-serif text-[#064e3b] font-bold">
-                {gen === 1 && "Generation 1"}
-                {gen === 2 && "Generation 2"}
-                {gen === 3 && "Generation 3"}
-                {gen === 4 && "Generation 4"}
+                {gen === 1 && "Kakanninmu"}
+                {gen === 2 && "Iyayanmu"}
+                {gen === 3 && "Ƴan-Uwanmu"}
+                {gen === 4 && "Ƴaƴanmu"}
                 {gen > 4 && `Gen ${gen}`}
               </h2>
               <div className="h-px bg-stone-200 grow mt-1"></div>

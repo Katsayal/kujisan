@@ -82,7 +82,7 @@ export default async function PersonPage({ params }: Props) {
               {person.fullName}
             </h1>
             
-            {/* DATE LOGIC FIX: Only show if deceased */}
+            {/* DATE LOGIC: Only show if deceased */}
             {person.isDeceased && (
               <p className="text-emerald-100/70 font-mono text-sm tracking-wider uppercase">
                 {person.birthDate ? new Date(person.birthDate).getFullYear() : "?"} — {person.deathDate ? new Date(person.deathDate).getFullYear() : "Deceased"}
@@ -116,7 +116,6 @@ export default async function PersonPage({ params }: Props) {
                 <span className="text-2xl">📜</span>
                 <h3 className="text-xl font-serif font-bold text-[#064e3b]">Biography</h3>
               </div>
-              {/* FONT FIX: Darker text, better readability */}
               <article className="prose prose-stone prose-lg max-w-none leading-relaxed text-stone-800 font-medium">
                 <PortableText value={person.bio} />
               </article>
@@ -147,27 +146,42 @@ export default async function PersonPage({ params }: Props) {
 
             <div className="space-y-10">
               
-              {/* 1. PARENTS & SIBLINGS (Origin) */}
+              {/* 1. PARENTS & SIBLINGS & GRANDPARENTS (Origin) */}
               {person.parentsData?.map((union) => (
                 <div key={union._id} className="relative pl-8 border-l-2 border-stone-200">
-                  <span className="absolute -left-2.25 top-0 w-4 h-4 bg-stone-200 rounded-full border-2 border-[#f5f5f4]"></span>
+                  <span className="absolute -left-2.5 top-0 w-4 h-4 bg-stone-200 rounded-full border-2 border-[#f5f5f4]"></span>
                   <h4 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-6">Parents</h4>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
                     {union.partners.map((parent) => (
-                      <Link key={parent._id} href={`/person/${parent.slug.current}`} className="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-stone-100 hover:border-[#b45309] transition-colors group">
-                        <div className="relative w-12 h-12 rounded-full overflow-hidden bg-stone-200 border border-stone-100">
-                           {parent.profileImage && <Image src={urlFor(parent.profileImage).width(100).url()} fill sizes="50px" alt="" className="object-cover"/>}
-                        </div>
-                        <div>
-                           <span className="text-[10px] text-[#b45309] font-bold block uppercase">{parent.sex === 'male' ? 'Father' : 'Mother'}</span>
-                           <span className="font-serif font-bold text-stone-900 group-hover:text-[#064e3b] transition-colors">{parent.fullName}</span>
-                        </div>
-                      </Link>
+                      <div key={parent._id} className="flex flex-col gap-2">
+                        {/* Parent Card */}
+                        <Link href={`/person/${parent.slug.current}`} className="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-stone-100 hover:border-[#b45309] transition-colors group">
+                          <div className="relative w-12 h-12 rounded-full overflow-hidden bg-stone-200 border border-stone-100">
+                             {parent.profileImage && <Image src={urlFor(parent.profileImage).width(100).url()} fill sizes="50px" alt="" className="object-cover"/>}
+                          </div>
+                          <div>
+                             <span className="text-[10px] text-[#b45309] font-bold block uppercase">{parent.sex === 'male' ? 'Father' : 'Mother'}</span>
+                             <span className="font-serif font-bold text-stone-900 group-hover:text-[#064e3b] transition-colors">{parent.fullName}</span>
+                          </div>
+                        </Link>
+
+                        {/* RESTORED: Grandparents List */}
+                        {parent.parents && parent.parents.length > 0 && (
+                          <div className="pl-4 ml-4 border-l border-stone-200 space-y-1">
+                             <span className="text-[9px] font-bold text-stone-400 uppercase tracking-wider block">Grandparents</span>
+                             {parent.parents.map(gp => (
+                               <Link key={gp._id} href={`/person/${gp.slug.current}`} className="block text-xs text-stone-500 hover:text-[#064e3b] transition-colors truncate">
+                                 {gp.fullName}
+                               </Link>
+                             ))}
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
 
-                  {/* SIBLINGS FIX */}
+                  {/* SIBLINGS */}
                   {union.children && union.children.length > 1 && (
                     <div className="bg-stone-50/50 p-4 rounded-xl border border-stone-100">
                       <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block mb-3">Siblings</span>
@@ -188,8 +202,8 @@ export default async function PersonPage({ params }: Props) {
               {/* 2. FAMILY UNITS (Unions) */}
               {person.unionsData?.length > 0 && (
                  <div className="relative pl-8 border-l-2 border-stone-200">
-                   <span className="absolute -left-2.25 top-0 w-4 h-4 bg-[#b45309] rounded-full border-2 border-[#f5f5f4] shadow-sm"></span>
-                   <h4 className="text-xs font-bold text-[#b45309] uppercase tracking-widest mb-6">Family Units Created</h4>
+                   <span className="absolute -left-2.5 top-0 w-4 h-4 bg-[#b45309] rounded-full border-2 border-[#f5f5f4] shadow-sm"></span>
+                   <h4 className="text-xs font-bold text-[#b45309] uppercase tracking-widest mb-6">Family Units</h4>
 
                    <div className="space-y-8">
                      {person.unionsData.map((union, index) => {
@@ -206,7 +220,7 @@ export default async function PersonPage({ params }: Props) {
                                </span>
                                {spouse ? (
                                  <Link href={`/person/${spouse.slug.current}`} className="flex items-center gap-2 group">
-                                    <span className="text-stone-300">with</span>
+                                    <span className="text-stone-300">مع</span>
                                     <div className="relative w-6 h-6 rounded-full overflow-hidden bg-stone-200 border border-stone-300">
                                       {spouse.profileImage && <Image src={urlFor(spouse.profileImage).width(50).url()} fill sizes="30px" alt="" className="object-cover"/>}
                                     </div>
@@ -225,7 +239,6 @@ export default async function PersonPage({ params }: Props) {
                                       <div className="relative w-6 h-6 rounded-full overflow-hidden bg-stone-200 shrink-0 border border-white">
                                          {child.profileImage && <Image src={urlFor(child.profileImage).width(50).url()} fill sizes="30px" alt="" className="object-cover"/>}
                                       </div>
-                                      {/* FONT FIX: Darker, cleaner text */}
                                       <span className="text-sm font-semibold text-stone-800 group-hover:text-white">{child.fullName}</span>
                                    </Link>
                                  ))}
