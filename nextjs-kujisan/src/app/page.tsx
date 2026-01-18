@@ -46,13 +46,13 @@ export default async function LandingPage() {
               href="/members" 
               className="px-8 py-4 bg-[#b45309] text-white rounded-full font-medium tracking-wide hover:bg-[#92400e] transition-all shadow-lg hover:shadow-[#b45309]/30 hover:-translate-y-1"
             >
-              Browse Directory
+              Zurriyya
             </Link>
             <Link 
               href="/family" 
               className="px-8 py-4 bg-white/10 backdrop-blur-md text-white border border-white/20 rounded-full font-medium tracking-wide hover:bg-white/20 transition-all"
             >
-              View Family Units
+              Gida Gida
             </Link>
           </div>
         </div>

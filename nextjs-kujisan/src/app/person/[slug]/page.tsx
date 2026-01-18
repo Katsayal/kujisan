@@ -16,10 +16,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const person = await getPerson(slug);
   if (!person) return { title: 'Not Found' };
+
+  const ogImage = person.profileImage 
+    ? urlFor(person.profileImage).width(1200).height(630).url()
+    : null; // Fallback to default if no photo
   
   return {
     title: person.fullName,
-    description: `Family profile of ${person.fullName}`,
+    description: person.bio 
+      ? `Read the biography and lineage of ${person.fullName}.` 
+      : `Family profile of ${person.fullName}`,
+    // 2. Pass it to OpenGraph
+    openGraph: {
+      title: `${person.fullName} | KUJISAN`,
+      description: `Family profile of ${person.fullName}`,
+      images: ogImage ? [ogImage] : [],
+    },
   };
 }
 

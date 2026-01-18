@@ -217,7 +217,6 @@ export default function MembersBrowser({ initialPeople }: Props) {
       </div>
 
       {/* --- CONTENT --- */}
-      {/* Added pt-12 to push content down so title isn't hidden immediately */}
       <div className="pt-12 space-y-16">
         {sortedGenerations.map((gen) => (
           <section key={gen} className="animate-fade-in">
@@ -244,8 +243,8 @@ export default function MembersBrowser({ initialPeople }: Props) {
                   href={`/person/${person.slug.current}`}
                   className="group block bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-stone-100 relative"
                 >
-                  {/* Badge for Spouses */}
-                  {!person.isDescendant && (
+                  {/* Badge for Spouses: ONLY if NOT Descendant AND NOT Gen 1 */}
+                  {!person.isDescendant && person.generation !== 1 && (
                     <div className="absolute top-2 right-2 z-10 bg-white/90 backdrop-blur-sm text-[#b45309] text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shadow-sm border border-stone-100">
                       In-Law
                     </div>

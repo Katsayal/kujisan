@@ -3,9 +3,12 @@ import "./globals.css";
 
 // 1. Define Global Metadata
 export const metadata: Metadata = {
+  // FIXED: Add your deployed domain here
+  metadataBase: new URL('https://kujisan.netlify.app'), 
+  
   title: {
-    template: '%s | KUJISAN', // %s will be replaced by the specific page title
-    default: 'KUJISAN Family Tree', // Fallback title
+    template: '%s | KUJISAN',
+    default: 'KUJISAN Family Tree',
   },
   description: 'Zuri\'a da Ƴaƴa da Jikoki na BABA Alhaji Sani Abubakar Nadede.',
   openGraph: {
