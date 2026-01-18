@@ -4,6 +4,9 @@ import Footer from "@/components/Footer";
 import MembersBrowser from "./MembersBrowser";
 import { Metadata } from "next";
 
+// FIX: Check for new content every 60 seconds
+export const revalidate = 60; 
+
 export const metadata: Metadata = {
   title: 'Zurriya Directory | KUJISAN',
   description: 'The complete directory of the Sani Abubakar Nadede lineage, organized by generation.',

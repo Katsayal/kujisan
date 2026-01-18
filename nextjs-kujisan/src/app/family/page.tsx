@@ -6,6 +6,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Metadata } from "next";
 
+export const revalidate = 60;
+
 export const metadata: Metadata = {
   title: 'Family Units | KUJISAN',
   description: 'Browse the nuclear family units and households of the lineage.',

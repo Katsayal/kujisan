@@ -6,6 +6,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Metadata } from "next";
 
+export const revalidate = 60;
+
 export const metadata: Metadata = {
   title: 'Visual History | KUJISAN',
   description: 'A curated gallery of moments, events, and memories from the Sani Abubakar Nadede lineage.',
