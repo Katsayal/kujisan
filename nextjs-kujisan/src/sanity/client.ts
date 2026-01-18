@@ -205,7 +205,7 @@ export const getPeople = async (): Promise<MinimalPerson[]> => {
   // Updated to fetch generation and birthDate
   return await client.fetch(`*[_type == "person"] | order(fullName asc){ 
     _id, fullName, slug, profileImage, sex, isDescendant, generation, birthDate
-  }`);
+  }`, {}, { next: { revalidate: 60 }, cache: 'no-store' });
 };
 
 export const getFamilies = async (): Promise<FamilyDirectoryItem[]> => {
@@ -315,4 +315,67 @@ export const getAlbum = async (slug: string): Promise<PhotoAlbum | null> => {
       "aspectRatio": asset->metadata.dimensions.aspectRatio
     }
   }`, { slug });
+};
+
+
+// --- ANCESTRY TREE API ---
+
+export interface TreePerson {
+  _id: string;
+  fullName: string;
+  generation: number;
+  sex: 'male' | 'female';
+  profileImage?: any;
+  slug?: { current: string };
+  unions: {
+    _id: string;
+    partner?: {
+      _id: string;
+      fullName: string;
+      profileImage?: any;
+      slug: { current: string };
+    };
+    children: {
+      _id: string;
+      fullName: string;
+      generation: number;
+      sex: 'male' | 'female';
+      profileImage?: any;
+      childCount: number;
+      slug?: { current: string };
+    }[];
+  }[];
+}
+
+const treeFields = `
+  _id, fullName, generation, sex, profileImage, slug,
+  "unions": *[_type == "union" && ^._id in partners[]._ref] {
+    _id,
+    "partner": partners[@._ref != ^.^._id][0]->{ _id, fullName, profileImage, slug },
+    children[]-> {
+      _id, fullName, generation, sex, profileImage, slug,
+      "childCount": count(*[_type == "union" && ^._id in partners[]._ref].children)
+    }
+  }
+`;
+
+// 1. Get Root (Sani)
+export const getTreeRoot = async (): Promise<TreePerson[]> => {
+  return await client.fetch(
+    `*[_type == "person" && generation == 1 && sex == "male"] { ${treeFields} }`,
+    {},
+    { cache: 'no-store' }
+  );
+};
+
+// 2. Get Branch (Descendants)
+export const getTreeBranch = async (personId: string): Promise<TreePerson | null> => {
+  if (!personId) {
+    console.error("getTreeBranch called with null ID");
+    return null;
+  }
+  return await client.fetch(
+    `*[_type == "person" && _id == $nodeId][0] { ${treeFields} }`, 
+    { nodeId: personId }
+  );
 };

@@ -6,6 +6,8 @@ import { PortableText } from "@portabletext/react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
+export const revalidate = 60;
+
 export default async function LandingPage() {
   const data = await getHomepageData();
 

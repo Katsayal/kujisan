@@ -30,7 +30,7 @@ export default function Footer() {
       </div>
       
       {/* Decorative Bottom Bar */}
-      <div className="h-1 bg-gradient-to-r from-[#064e3b] via-[#b45309] to-[#064e3b] w-full opacity-30"></div>
+      <div className="h-1 bg-linear-to-r from-[#064e3b] via-[#b45309] to-[#064e3b] w-full opacity-30"></div>
     </footer>
   );
 }
