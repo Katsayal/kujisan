@@ -1,49 +1,118 @@
-import Link from "next/link";
+"use client";
+
+import { useEffect, useCallback, useState, useMemo } from 'react';
+import ReactFlow, { 
+  useNodesState, 
+  useEdgesState, 
+  ReactFlowProvider,
+  Controls,
+  Background,
+  Node,
+  Edge
+} from 'reactflow';
+import 'reactflow/dist/style.css'; 
+
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { Metadata } from "next";
+import { useLayout } from "@/hooks/useLayout";
+import PassportNode from "@/components/tree/PassportNode";
+import { getTreeRoot, getTreeBranch } from "@/sanity/client";
+import { transformBranch } from "@/utils/tree-transformer";
 
-export const metadata: Metadata = {
-  title: 'Ancestry Tree | KUJISAN',
-  description: 'Interactive family tree visualization - Coming Soon.',
-};
+function AncestryCanvas() {
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const { getLayoutedElements } = useLayout();
+  
+  // FIX: Define nodeTypes with useMemo to prevent re-creation warnings during Dev/HMR
+  const nodeTypes = useMemo(() => ({
+    passport: PassportNode,
+  }), []);
 
-export default function AncestryTreePage() {
+  // Data State
+  const nodesMap = useState(() => new Map<string, Node>())[0];
+  const edgesMap = useState(() => new Map<string, Edge>())[0];
+
+  const refreshLayout = useCallback(async () => {
+    const currentNodes = Array.from(nodesMap.values());
+    const currentEdges = Array.from(edgesMap.values());
+    
+    const layouted = await getLayoutedElements(currentNodes, currentEdges);
+    
+    // @ts-ignore
+    setNodes([...layouted.nodes]);
+    setEdges([...layouted.edges]);
+  }, [nodesMap, edgesMap, getLayoutedElements, setNodes, setEdges]);
+
+  const onNodeExpand = useCallback(async (personId: string) => {
+    const personData = await getTreeBranch(personId);
+    if (!personData) return;
+
+    transformBranch(personData, nodesMap, edgesMap);
+
+    const parentNode = nodesMap.get(personId);
+    if (parentNode) {
+      nodesMap.set(personId, {
+        ...parentNode,
+        data: { ...parentNode.data, expanded: true }
+      });
+    }
+
+    await refreshLayout();
+  }, [nodesMap, edgesMap, refreshLayout]);
+
+  useEffect(() => {
+    const initTree = async () => {
+      const roots = await getTreeRoot();
+      roots.forEach(root => transformBranch(root, nodesMap, edgesMap));
+      await refreshLayout();
+    };
+    initTree();
+  }, []);
+
+  useEffect(() => {
+     nodes.forEach(node => {
+       if (node.type === 'passport') {
+         node.data.onExpand = onNodeExpand;
+       }
+     });
+  }, [nodes, onNodeExpand]);
+
   return (
-    <div className="min-h-screen bg-[#f5f5f4] flex flex-col font-sans selection:bg-[#064e3b] selection:text-white">
-      <Navbar />
-      
-      <main className="grow flex flex-col items-center justify-center p-4 text-center">
-        <div className="bg-white p-12 rounded-3xl shadow-xl border border-stone-100 max-w-lg w-full">
-          <div className="w-24 h-24 bg-[#064e3b]/5 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-6xl">🌳</span>
-          </div>
-          
-          <h1 className="text-3xl font-serif font-bold text-[#064e3b] mb-4">
-            Ancestry Chart
-          </h1>
-          
-          <p className="text-stone-600 mb-8 leading-relaxed">
-            We are currently building an interactive visual tree to explore the lineage connections dynamically.
-          </p>
-          
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#fbbf24]/20 text-[#b45309] rounded-full text-xs font-bold uppercase tracking-widest mb-8">
-            <span className="w-2 h-2 bg-[#b45309] rounded-full animate-pulse"></span>
-            Under Construction
-          </div>
+    <div className="w-full h-[calc(100vh-64px)] bg-stone-50 relative">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        nodeTypes={nodeTypes} 
+        fitView
+        minZoom={0.1}
+        maxZoom={1.5}
+      >
+        <Background color="#e5e5e5" gap={40} />
+        {/* Controls moved slightly up to not overlap with our new hint */}
+        <Controls showInteractive={false} className="mb-12 md:mb-0" />
+      </ReactFlow>
 
-          <div className="flex justify-center">
-            <Link 
-              href="/members" 
-              className="px-8 py-3 bg-[#064e3b] text-white rounded-full font-medium hover:bg-[#053d2e] transition shadow-lg shadow-[#064e3b]/20"
-            >
-              Back to Directory
-            </Link>
-          </div>
+      {/* --- REVISED: Subtle Mobile Orientation Hint --- */}
+      {/* Positioned at bottom, semi-transparent, completely ignorable */}
+      <div className="md:hidden fixed bottom-6 left-0 right-0 z-50 pointer-events-none flex justify-center opacity-80">
+        <div className="bg-stone-800/80 backdrop-blur-md text-white/90 px-4 py-2 rounded-full text-[10px] uppercase font-bold tracking-widest shadow-sm border border-white/5 flex items-center gap-2">
+          <span className="text-sm">📲</span>
+          <span>Rotate for wider view</span>
         </div>
-      </main>
-      
-      <Footer />
+      </div>
+    </div>
+  );
+}
+
+export default function TreePage() {
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <ReactFlowProvider>
+        <AncestryCanvas />
+      </ReactFlowProvider>
     </div>
   );
 }
