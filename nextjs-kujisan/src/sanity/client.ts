@@ -4,8 +4,13 @@ export const client = createClient({
   projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
   dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
   apiVersion: process.env.NEXT_PUBLIC_SANITY_API_VERSION,
-  useCdn: true, // true for production, false for development
+  // FIX 1: Set to false so we get fresh data when Next.js revalidates
+  useCdn: false, 
 });
+
+// FIX 2: Global Fetch Configuration (ISR)
+// This limits API calls to once every 60 seconds per query
+const FETCH_CONFIG = { next: { revalidate: 60 } };
 
 // --- INTERFACES ---
 
@@ -41,8 +46,8 @@ export interface MinimalPerson {
   profileImage?: any;
   sex: 'male' | 'female';
   isDescendant: boolean;
-  generation?: number; // <--- NEW: Added Generation Level
-  birthDate?: string;  // <--- NEW: Added for sorting
+  generation?: number;
+  birthDate?: string;
 }
 
 export interface PersonDetail extends MinimalPerson {
@@ -120,7 +125,6 @@ export interface PhotoAlbum {
 
 export const getHomepageData = async (): Promise<HomepageData> => {
   const query = `{
-    // 1. Fetch Site Settings (Hero & About)
     "settings": *[_type == "siteSettings"][0] {
       heroTitle,
       heroSubtitle,
@@ -129,21 +133,18 @@ export const getHomepageData = async (): Promise<HomepageData> => {
       aboutImage,
       aboutContent
     },
-
-    // 2. Calculate Live Stats based on Generation & Lineage
     "stats": {
       "children": count(*[_type == "person" && isDescendant == true && generation == 2]),
       "grandchildren": count(*[_type == "person" && isDescendant == true && generation == 3]),
       "greatGrandchildren": count(*[_type == "person" && isDescendant == true && generation == 4])
     },
-
-    // 3. Fetch 3 Latest Photo Albums
     "latestAlbums": *[_type == "photoAlbum"] | order(date desc)[0...3] {
       _id, title, slug, coverImage, date
     }
   }`;
 
-  const result = await client.fetch(query);
+  // Apply Global Config
+  const result = await client.fetch(query, {}, FETCH_CONFIG);
 
   return {
     hero: {
@@ -164,14 +165,10 @@ export const getHomepageData = async (): Promise<HomepageData> => {
 export const getPerson = async (slug: string): Promise<PersonDetail | null> => {
   const query = `*[_type == "person" && slug.current == $slug][0] {
     ...,
-    
-    // Fetch new Audio Array
     "audioGallery": audioGallery[]{
       "url": asset->url,
       "title": title
     },
-    
-    // ... keep relevantFamily logic ...
     "relevantFamily": coalesce(
       *[_type == "family" && headOfFamily._ref == ^._id][0],
       *[_type == "family" && headOfFamily._ref in *[_type == "union" && ^.^._id in partners[]._ref].partners[]._ref][0],
@@ -189,23 +186,26 @@ export const getPerson = async (slug: string): Promise<PersonDetail | null> => {
       children[]->{ _id, fullName, slug, profileImage, sex, isDescendant, generation }
     },
 
-    // UPDATE: Sort Unions by Marriage Date (Oldest to Newest)
     "unionsData": *[_type == "union" && ^._id in partners[]._ref] | order(marriageDate asc){
       _id,
-      marriageDate, // Fetch the date
+      marriageDate, 
       partners[]->{ _id, fullName, slug, profileImage, sex, isDescendant, generation },
       children[]->{ _id, fullName, slug, profileImage, sex, isDescendant, generation }
     }
   }`;
   
-  return await client.fetch(query, { slug });
+  // Apply Global Config
+  return await client.fetch(query, { slug }, FETCH_CONFIG);
 };
 
 export const getPeople = async (): Promise<MinimalPerson[]> => {
-  // Updated to fetch generation and birthDate
-  return await client.fetch(`*[_type == "person"] | order(fullName asc){ 
-    _id, fullName, slug, profileImage, sex, isDescendant, generation, birthDate
-  }`, {}, { next: { revalidate: 60 }, cache: 'no-store' });
+  return await client.fetch(
+    `*[_type == "person"] | order(fullName asc){ 
+      _id, fullName, slug, profileImage, sex, isDescendant, generation, birthDate
+    }`, 
+    {}, 
+    FETCH_CONFIG // Apply Global Config (Replaces 'no-store')
+  ); 
 };
 
 export const getFamilies = async (): Promise<FamilyDirectoryItem[]> => {
@@ -215,15 +215,12 @@ export const getFamilies = async (): Promise<FamilyDirectoryItem[]> => {
     slug,
     mainImage,
     headOfFamily->{ fullName, birthDate },
-    
-    // LOGIC FIX: Count the Union documents directly (1 Union = 1 Wife)
     "wivesCount": count(*[_type == "union" && ^.headOfFamily._ref in partners[]._ref]),
-    
-    // LOGIC FIX: Count the flattened children array (Individual kids)
     "childrenCount": count(*[_type == "union" && ^.headOfFamily._ref in partners[]._ref].children[])
   }`;
 
-  return await client.fetch(query);
+  // Apply Global Config
+  return await client.fetch(query, {}, FETCH_CONFIG);
 };
 
 export const getFamily = async (slug: string): Promise<FamilyPageData | null> => {
@@ -245,7 +242,8 @@ export const getFamily = async (slug: string): Promise<FamilyPageData | null> =>
     }
   }`;
 
-  const result = await client.fetch(query, { slug });
+  // Apply Global Config
+  const result = await client.fetch(query, { slug }, FETCH_CONFIG);
 
   if (!result) return null;
 
@@ -254,7 +252,6 @@ export const getFamily = async (slug: string): Promise<FamilyPageData | null> =>
 
   if (result.rawUnions) {
     result.rawUnions.forEach((u: any) => {
-      // 1. Filter Partners to find Wives (Exclude Head)
       if (u.partners) {
         u.partners.forEach((partner: MinimalPerson) => {
            if (partner._id !== result.headOfFamily._id) {
@@ -262,7 +259,6 @@ export const getFamily = async (slug: string): Promise<FamilyPageData | null> =>
            }
         });
       }
-      // 2. Collect Children
       if (u.children) {
         allChildren.push(...u.children);
       }
@@ -293,28 +289,34 @@ export const getFamily = async (slug: string): Promise<FamilyPageData | null> =>
   };
 };
 
-// 1. Fetch All Albums (For the Gallery Directory)
 export const getGalleryAlbums = async (): Promise<PhotoAlbum[]> => {
-  return await client.fetch(`*[_type == "photoAlbum"] | order(date desc) {
-    _id,
-    title,
-    slug,
-    date,
-    coverImage,
-    description
-  }`);
+  return await client.fetch(
+    `*[_type == "photoAlbum"] | order(date desc) {
+      _id,
+      title,
+      slug,
+      date,
+      coverImage,
+      description
+    }`,
+    {},
+    FETCH_CONFIG // Apply Global Config
+  );
 };
 
-// 2. Fetch Single Album (For the detail view)
 export const getAlbum = async (slug: string): Promise<PhotoAlbum | null> => {
-  return await client.fetch(`*[_type == "photoAlbum" && slug.current == $slug][0] {
-    ...,
-    images[]{
-      asset,
-      "url": asset->url,
-      "aspectRatio": asset->metadata.dimensions.aspectRatio
-    }
-  }`, { slug });
+  return await client.fetch(
+    `*[_type == "photoAlbum" && slug.current == $slug][0] {
+      ...,
+      images[]{
+        asset,
+        "url": asset->url,
+        "aspectRatio": asset->metadata.dimensions.aspectRatio
+      }
+    }`, 
+    { slug },
+    FETCH_CONFIG // Apply Global Config
+  );
 };
 
 
@@ -333,7 +335,7 @@ export interface TreePerson {
       _id: string;
       fullName: string;
       profileImage?: any;
-      slug: { current: string };
+      slug?: { current: string };
     };
     children: {
       _id: string;
@@ -364,7 +366,7 @@ export const getTreeRoot = async (): Promise<TreePerson[]> => {
   return await client.fetch(
     `*[_type == "person" && generation == 1 && sex == "male"] { ${treeFields} }`,
     {},
-    { cache: 'no-store' }
+    FETCH_CONFIG // Apply Global Config (Replaces 'no-store')
   );
 };
 
@@ -376,6 +378,7 @@ export const getTreeBranch = async (personId: string): Promise<TreePerson | null
   }
   return await client.fetch(
     `*[_type == "person" && _id == $nodeId][0] { ${treeFields} }`, 
-    { nodeId: personId }
+    { nodeId: personId },
+    FETCH_CONFIG // Apply Global Config
   );
 };
