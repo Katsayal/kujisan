@@ -4,6 +4,40 @@ export default defineType({
   name: 'person',
   title: 'Person',
   type: 'document',
+  
+  orderings: [
+    {
+      title: 'Name (A-Z)',
+      name: 'fullNameAsc',
+      by: [{field: 'fullName', direction: 'asc'}]
+    },
+    {
+      title: 'Name (Z-A)',
+      name: 'fullNameDesc',
+      by: [{field: 'fullName', direction: 'desc'}]
+    },
+    {
+      title: 'Age',
+      name: 'ageDesc',
+      by: [{field: 'birthDate', direction: 'asc'}]
+    },
+    {
+      title: 'Sex',
+      name: 'sexAsc',
+      by: [{field: 'sex', direction: 'asc'}]
+    },
+    {
+      title: 'Generation (Old-Young)',
+      name: 'generationAsc',
+      by: [{field: 'generation', direction: 'asc'}]
+    },
+    {
+      title: 'Deceased Status',
+      name: 'isDeceasedDesc',
+      by: [{field: 'isDeceased', direction: 'desc'}] // Deceased first
+    }
+  ],
+
   fields: [
     defineField({
       name: 'fullName',
