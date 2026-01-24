@@ -84,9 +84,14 @@ export default async function PersonPage({ params }: Props) {
             
             {/* DATE LOGIC: Only show if deceased */}
             {person.isDeceased && (
+              <div className="flex flex-col items-center gap-1">
               <p className="text-emerald-100/70 font-mono text-sm tracking-wider uppercase">
                 {person.birthDate ? new Date(person.birthDate).getFullYear() : "?"} — {person.deathDate ? new Date(person.deathDate).getFullYear() : "Deceased"}
               </p>
+              <p className="text-emerald-200/80 font-serif italic text-sm">
+                Allah jiƙansu da Rahama, AMEEN
+              </p>
+              </div>
             )}
 
             {/* AUDIO PLAYERS */}
@@ -150,7 +155,7 @@ export default async function PersonPage({ params }: Props) {
               {person.parentsData?.map((union) => (
                 <div key={union._id} className="relative pl-8 border-l-2 border-stone-200">
                   <span className="absolute -left-2.5 top-0 w-4 h-4 bg-stone-200 rounded-full border-2 border-[#f5f5f4]"></span>
-                  <h4 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-6">Parents</h4>
+                  <h4 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-6">Iyaye</h4>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
                     {union.partners.map((parent) => (
@@ -161,7 +166,7 @@ export default async function PersonPage({ params }: Props) {
                              {parent.profileImage && <Image src={urlFor(parent.profileImage).width(100).url()} fill sizes="50px" alt="" className="object-cover"/>}
                           </div>
                           <div>
-                             <span className="text-[10px] text-[#b45309] font-bold block uppercase">{parent.sex === 'male' ? 'Father' : 'Mother'}</span>
+                             <span className="text-[10px] text-[#b45309] font-bold block uppercase">{parent.sex === 'male' ? 'Mahaifi' : 'Mahaifiya'}</span>
                              <span className="font-serif font-bold text-stone-900 group-hover:text-[#064e3b] transition-colors">{parent.fullName}</span>
                           </div>
                         </Link>
@@ -184,7 +189,7 @@ export default async function PersonPage({ params }: Props) {
                   {/* SIBLINGS */}
                   {union.children && union.children.length > 1 && (
                     <div className="bg-stone-50/50 p-4 rounded-xl border border-stone-100">
-                      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block mb-3">Siblings</span>
+                      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block mb-3">Ƴan-Uwa</span>
                       <div className="flex flex-wrap gap-2">
                         {union.children
                           .filter(child => child._id !== person._id) // Filter out self

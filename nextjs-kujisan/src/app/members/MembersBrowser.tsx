@@ -246,7 +246,7 @@ export default function MembersBrowser({ initialPeople }: Props) {
                   {/* Badge for Spouses: ONLY if NOT Descendant AND NOT Gen 1 */}
                   {!person.isDescendant && person.generation !== 1 && (
                     <div className="absolute top-2 right-2 z-10 bg-white/90 backdrop-blur-sm text-[#b45309] text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shadow-sm border border-stone-100">
-                      In-Law
+                      Iyaye
                     </div>
                   )}
 
